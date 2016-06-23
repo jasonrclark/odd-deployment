@@ -1,41 +1,48 @@
-# Nope
+# odd-deployment
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/nope`. To experiment with that code, run `bin/console` for an interactive prompt.
+This gem demonstrates an oddity I noticed when bundling locally with and without the `--deployment` option.
 
-TODO: Delete this and the text above, and describe your gem
+Note that the setup of my gem isn't quite standard (see section below), so maybe this is expected.
 
-## Installation
+## The Behavior
 
-Add this line to your application's Gemfile:
+If I run a normal `bundle install` I get this list of gems:
 
-```ruby
-gem 'nope'
+```
+~/source/odd-deployment:bundle install
+Resolving dependencies...
+Using rake 10.5.0
+Using bundler 1.12.5
+Using little-plugger 1.1.4
+Using multi_json 1.12.1
+Using minitest 5.9.0
+Using zookeeper 1.4.11
+Using logging 1.8.2
+Using zk 1.9.4
+Using nope 0.2.0 from source at `.`
+Bundle complete! 4 Gemfile dependencies, 9 gems now installed.
+Use `bundle show [gemname]` to see where a bundled gem is installed.
 ```
 
-And then execute:
+However, if I run `bundle install --deployment` from a clean checkout I get a shorter list:
 
-    $ bundle
+```
+~/source/odd-deployment:bundle install --deployment
+Fetching gem metadata from https://rubygems.org/
+Fetching version metadata from https://rubygems.org/
+Installing rake 10.5.0
+Installing minitest 5.9.0
+Using bundler 1.12.5
+Bundle complete! 4 Gemfile dependencies, 3 gems now installed.
+Bundled gems are installed into ./vendor/bundle.
+```
 
-Or install it yourself as:
+Note that because of the version we're not getting our local gem `from source`, nor any of its dependencies.
 
-    $ gem install nope
+## What's Weird in the Setup
+We use [papers](https://github.com/newrelic/papers) to do license validation tests against our gems. Given that, I found it useful to provide a `Gemfile.lock` so we wouldn't have versions drifting in the test environment. This is non-standard for a gem, and is likely involved in the problem.
 
-## Usage
+The other oddity is that I've bumped the local `VERSION` constant for the gem, but haven't updated the `Gemfile.lock` yet. Obviously not the state things should be in longer term, but in another case I did check something in without updating and saw test failures because of missing dependenciesi... not what I'd expect.
 
-TODO: Write usage instructions here
-
-## Development
-
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/nope. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
-
-
-## License
-
-The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
-
+## What Did I Expect?
+I was surprised by the different behavior when passing or not passing `--deployment`. I can buy that bundler can't proceed because of the version mismatch, but maybe it could give a warning or error if it's excluding a local gem in this fashion?
